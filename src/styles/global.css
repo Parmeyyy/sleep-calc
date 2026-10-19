@@ -154,3 +154,48 @@ h3 {
     transition: none !important;
   }
 }
+
+.page-title {
+  margin-top: 0.75rem;
+  font-size: 1.5rem;
+}
+
+.lead {
+  margin: 0.2rem 0 0;
+  color: var(--muted);
+  font-size: 0.95rem;
+  line-height: 1.4;
+}
+
+.table-wrap {
+  overflow-x: auto;
+  margin: 0 0 0.9rem;
+}
+
+.prose table {
+  width: 100%;
+  border-collapse: collapse;
+  font-variant-numeric: tabular-nums;
+}
+
+.prose th,
+.prose td {
+  padding: 0.55rem 0.5rem;
+  border-bottom: 1px solid var(--border);
+  text-align: left;
+  vertical-align: top;
+}
+
+.prose thead th {
+  font-size: 0.85rem;
+  color: var(--muted);
+  font-weight: 600;
+}
+
+.sources {
+  font-size: 0.9rem;
+}
+
+.sources li {
+  overflow-wrap: anywhere;
+}

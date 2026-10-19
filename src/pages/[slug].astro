@@ -3,41 +3,95 @@ import type { GetStaticPaths } from 'astro';
 import Base from '../layouts/Base.astro';
 import Calculator from '../components/Calculator.astro';
 import AdSlot from '../components/AdSlot.astro';
-import { WAKE_PAGES, slugFor, type WakePage } from '../data/wake-pages';
+import { TIME_PAGES, fillText, pageQuestion, slugFor, type TimePage } from '../data/time-pages';
 import { absoluteUrl, url } from '../lib/site';
-import { breadcrumbs, webApplication } from '../lib/jsonld';
-import { DEFAULT_SETTINGS, bedtimesFor, cyclesLabel, formatDuration, parseTime } from '../lib/sleep';
+import { breadcrumbs, faqPage, webApplication } from '../lib/jsonld';
+import {
+  DEFAULT_SETTINGS,
+  alarmFit,
+  calculate,
+  cyclesLabel,
+  formatDuration,
+  formatTime,
+  parseTime,
+  type SleepOption,
+} from '../lib/sleep';
 
 export const getStaticPaths = (() =>
-  WAKE_PAGES.map((page, i) => ({
-    params: { slug: slugFor(page.time) },
-    props: { page, prev: WAKE_PAGES[i - 1], next: WAKE_PAGES[i + 1] },
-  }))) satisfies GetStaticPaths;
+  TIME_PAGES.map((page) => {
+    const same = TIME_PAGES.filter((p) => p.kind === page.kind);
+    const i = same.indexOf(page);
+    return { params: { slug: slugFor(page) }, props: { page, prev: same[i - 1], next: same[i + 1] } };
+  })) satisfies GetStaticPaths;
 
 interface Props {
-  page: WakePage;
-  prev?: WakePage;
-  next?: WakePage;
+  page: TimePage;
+  prev?: TimePage;
+  next?: TimePage;
 }
 
 const { page, prev, next } = Astro.props;
-const wake = parseTime(page.time)!;
-const path = `${slugFor(page.time)}/`;
+const isWake = page.kind === 'wake';
+const minutes = parseTime(page.time)!;
+const path = `${slugFor(page)}/`;
+const { fallAsleep, cycle } = DEFAULT_SETTINGS;
 
-const options = bedtimesFor(wake, DEFAULT_SETTINGS);
-const byCycles = (n: number) => options.find((o) => o.cycles === n)!;
-const six = byCycles(6);
-const five = byCycles(5);
-const four = byCycles(4);
+const options = calculate(page.kind, minutes, DEFAULT_SETTINGS);
+const byCycles = (list: SleepOption[], n: number) => list.find((o) => o.cycles === n)!;
+const values: Record<string, string> = { t: page.time };
+for (let k = 1; k <= 6; k++) values[`c${k}`] = byCycles(options, k).time;
+values.coffee = formatTime(byCycles(options, 5).minutes - 6 * 60);
+const fill = (text: string) => fillText(text, values);
 
-// Как меняется отбой при разном времени засыпания — для таблицы.
-const fallVariants = [5, 15, 30].map((fallAsleep) => {
-  const r = bedtimesFor(wake, { ...DEFAULT_SETTINGS, fallAsleep });
-  return { fallAsleep, six: r[0].time, five: r[1].time, four: r[2].time };
+const five = byCycles(options, 5);
+const six = byCycles(options, 6);
+const question = pageQuestion(page);
+const lead = fill(page.lead);
+const faq = { q: fill(page.faq.q), a: fill(page.faq.a) };
+
+// Таблица вариантов при других настройках: строки — значение настройки, столбцы — 4, 5, 6 циклов.
+const tableCycles = [4, 5, 6];
+const tableRows = (key: 'fallAsleep' | 'cycle', settingValues: number[]) =>
+  settingValues.map((v) => {
+    const list = calculate(page.kind, minutes, { ...DEFAULT_SETTINGS, [key]: v });
+    return { label: `${v} мин`, times: tableCycles.map((k) => byCycles(list, k).time), isDefault: v === DEFAULT_SETTINGS[key] };
+  });
+const fallRows = tableRows('fallAsleep', [5, 15, 30]);
+const cycleRows = tableRows('cycle', [80, 90, 100]);
+// Время для 5 циклов (средний столбец) в крайних строках — для пояснения под таблицей.
+const at5 = (rows: typeof fallRows, i: number) => rows[i].times[1];
+
+// Вечерний план (wake): от отбоя на 5 циклов назад.
+const bed5 = five.minutes;
+const evening = [
+  { at: bed5 - 6 * 60, text: 'Последняя чашка кофе. Даже за 6 часов до сна 400 мг кофеина сокращали сон больше чем на час (Drake и соавторы, 2013), поэтому лучше выпить её раньше' },
+  { at: bed5 - 60, text: 'Приглушите свет, закончите с работой и перепиской' },
+  { at: bed5 - 30, text: 'Телефон на зарядку подальше от кровати' },
+  { at: bed5, text: 'Свет выключен, вы в постели' },
+  { at: bed5 + fallAsleep, text: `Засыпание, если оно занимает ${fallAsleep} минут` },
+  { at: minutes, text: `Подъём после ${cyclesLabel(5)}` },
+].map((e) => ({ ...e, time: formatTime(e.at) }));
+
+// Привычные будильники (bed): куда они попадают по циклам.
+const fixedAlarms = ['06:00', '06:30', '07:00', '07:30', '08:00'].map((w) => {
+  const fit = alarmFit(minutes, parseTime(w)!, DEFAULT_SETTINGS);
+  let verdict: string;
+  let good = true;
+  if (fit.intoCycle === 0) verdict = 'ровно на границе цикла';
+  else if (fit.intoCycle <= 15) verdict = `через ${fit.intoCycle} мин после конца цикла`;
+  else if (cycle - fit.intoCycle <= 15) verdict = `за ${cycle - fit.intoCycle} мин до конца цикла`;
+  else {
+    verdict = 'в середине цикла';
+    good = false;
+  }
+  return { time: w, sleep: formatDuration(fit.sleepMinutes), verdict, good };
 });
 
-const title = `Во сколько лечь, чтобы встать в ${page.time} — калькулятор сна`;
-const description = `Чтобы встать в ${page.time} бодрым, ложитесь в ${five.time} (5 циклов, ${formatDuration(five.sleepMinutes)}) или в ${six.time} (6 циклов, ${formatDuration(six.sleepMinutes)}). Все варианты с учётом засыпания.`;
+const title = isWake ? `${question} — калькулятор сна` : `${question}? Калькулятор сна`;
+const description = isWake
+  ? `Чтобы встать в ${page.time}, ложитесь в ${five.time} (5 циклов, ${formatDuration(five.sleepMinutes)}) или в ${six.time} (6 циклов, ${formatDuration(six.sleepMinutes)}). Все варианты с учётом засыпания.`
+  : `Если лечь в ${page.time}, вставайте в ${five.time} (5 циклов, ${formatDuration(five.sleepMinutes)}) или в ${six.time} (6 циклов, ${formatDuration(six.sleepMinutes)}). Все варианты с учётом засыпания.`;
+const otherLabel = (p: TimePage) => (p.kind === 'wake' ? `Встать в ${p.time}` : `Лечь в ${p.time}`);
 ---
 
 <Base
@@ -46,113 +100,191 @@ const description = `Чтобы встать в ${page.time} бодрым, ло�
   path={path}
   jsonLd={[
     webApplication(absoluteUrl(path, Astro.site), description),
+    faqPage([faq]),
     breadcrumbs([
       { name: 'Калькулятор сна', url: absoluteUrl('', Astro.site) },
-      { name: `Встать в ${page.time}`, url: absoluteUrl(path, Astro.site) },
+      { name: otherLabel(page), url: absoluteUrl(path, Astro.site) },
     ]),
   ]}
 >
-  <h1>Калькулятор сна</h1>
-  <p class="lead">Во сколько лечь, чтобы встать в {page.time}</p>
+  <h1 class="page-title">Калькулятор сна</h1>
+  <p class="lead">{question}</p>
 
-  <Calculator mode="wake" wake={page.time} />
+  {isWake ? <Calculator mode="wake" wake={page.time} /> : <Calculator mode="bed" bed={page.time} />}
 
   <AdSlot />
 
   <article class="prose">
-    <p>
-      <strong>Короткий ответ:</strong> чтобы проснуться в {page.time} между циклами сна, ложитесь в{' '}
-      <strong>{five.time}</strong> — это {cyclesLabel(5)} и {formatDuration(five.sleepMinutes)} сна. Если хочется
-      выспаться с запасом, подойдёт <strong>{six.time}</strong> ({cyclesLabel(6)}, {formatDuration(six.sleepMinutes)}).
-      Крайний разумный вариант — <strong>{four.time}</strong>: {cyclesLabel(4)}, около {formatDuration(four.sleepMinutes)}.
-    </p>
+    <p class="answer">{lead}</p>
 
-    <h2>Кому подходит подъём в {page.time}</h2>
-    <p>{page.context}</p>
+    <h2>{page.about.title}</h2>
+    <p>{fill(page.about.text)}</p>
 
-    <h2>Если засыпаете быстрее или дольше</h2>
-    <p>
-      Варианты выше рассчитаны для {DEFAULT_SETTINGS.fallAsleep} минут на засыпание и циклов по {DEFAULT_SETTINGS.cycle} минут.
-      Вот как сдвигается время отбоя для подъёма в {page.time}, если вы засыпаете быстрее или медленнее:
-    </p>
-    <div class="table-wrap">
-      <table>
-        <caption class="visually-hidden">Время отбоя для подъёма в {page.time} в зависимости от времени засыпания</caption>
-        <thead>
-          <tr>
-            <th scope="col">Засыпаю за</th>
-            <th scope="col">6 циклов</th>
-            <th scope="col">5 циклов</th>
-            <th scope="col">4 цикла</th>
-          </tr>
-        </thead>
-        <tbody>
-          {
-            fallVariants.map((v) => (
-              <tr>
-                <th scope="row">{v.fallAsleep} мин</th>
-                <td>{v.six}</td>
-                <td>{v.five}</td>
-                <td>{v.four}</td>
-              </tr>
-            ))
-          }
-        </tbody>
-      </table>
-    </div>
-    <p>
-      Расчёт простой: из {page.time} вычитаются время засыпания и нужное число циклов. Например, для пяти циклов:{' '}
-      {page.time} − {DEFAULT_SETTINGS.fallAsleep} мин − 5 × {DEFAULT_SETTINGS.cycle} мин = {five.time}.
-    </p>
+    {
+      page.extra === 'fall' && (
+        <section>
+          <h2>
+            {isWake ? `Отбой для подъёма в ${page.time} при разном засыпании` : `Подъём после отбоя в ${page.time} при разном засыпании`}
+          </h2>
+          <p>
+            {isWake
+              ? `Если вы засыпаете за 30 минут, для пяти циклов ложитесь в ${at5(fallRows, 2)}. Если за 5 минут — в ${at5(fallRows, 0)}.`
+              : `Если вы засыпаете за 30 минут, пять циклов закончатся в ${at5(fallRows, 2)}. Если за 5 минут — в ${at5(fallRows, 0)}.`}
+          </p>
+          <div class="table-wrap">
+            <table>
+              <caption class="visually-hidden">
+                {isWake ? 'Время отбоя' : 'Время подъёма'} в зависимости от времени засыпания
+              </caption>
+              <thead>
+                <tr>
+                  <th scope="col">Засыпаю за</th>
+                  {tableCycles.map((k) => <th scope="col">{cyclesLabel(k)}</th>)}
+                </tr>
+              </thead>
+              <tbody>
+                {fallRows.map((r) => (
+                  <tr class:list={{ current: r.isDefault }}>
+                    <th scope="row">{r.label}</th>
+                    {r.times.map((x) => <td>{x}</td>)}
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </section>
+      )
+    }
 
-    <h2>Совет</h2>
-    <p>{page.tip}</p>
+    {
+      page.extra === 'cycle' && (
+        <section>
+          <h2>Если ваш цикл короче или длиннее {cycle} минут</h2>
+          <p>
+            {isWake
+              ? `При цикле 100 минут для пяти циклов нужно лечь в ${at5(cycleRows, 2)}, при цикле 80 минут — в ${at5(cycleRows, 0)}.`
+              : `При цикле 100 минут пять циклов закончатся в ${at5(cycleRows, 2)}, при цикле 80 минут — в ${at5(cycleRows, 0)}.`}{' '}
+            Почему {cycle} минут — только среднее, рассказано в разделе <a href={`${url()}#how-title`}>«Как это работает»</a>.
+          </p>
+          <div class="table-wrap">
+            <table>
+              <caption class="visually-hidden">
+                {isWake ? 'Время отбоя' : 'Время подъёма'} при разной длине цикла
+              </caption>
+              <thead>
+                <tr>
+                  <th scope="col">Цикл</th>
+                  {tableCycles.map((k) => <th scope="col">{cyclesLabel(k)}</th>)}
+                </tr>
+              </thead>
+              <tbody>
+                {cycleRows.map((r) => (
+                  <tr class:list={{ current: r.isDefault }}>
+                    <th scope="row">{r.label}</th>
+                    {r.times.map((x) => <td>{x}</td>)}
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </section>
+      )
+    }
 
-    <p class="note">
-      Длина цикла сна индивидуальна, а 90 минут — лишь среднее значение. Расчёт носит информационный характер и не
-      является медицинской рекомендацией.
-    </p>
+    {
+      page.extra === 'evening' && (
+        <section>
+          <h2>План вечера для подъёма в {page.time}</h2>
+          <p>Расписание построено от отбоя в {five.time} на 5 циклов. Если выбрали другой вариант, сдвиньте его.</p>
+          <ol class="timeline">
+            {evening.map((e) => (
+              <li>
+                <span class="tl-time">{e.time}</span>
+                <span>{e.text}</span>
+              </li>
+            ))}
+          </ol>
+        </section>
+      )
+    }
 
-    <nav class="neighbors" aria-label="Соседнее время подъёма">
-      {prev && <a href={url(slugFor(prev.time))}>← Встать в {prev.time}</a>}
-      {next && <a class="next" href={url(slugFor(next.time))}>Встать в {next.time} →</a>}
+    {
+      page.extra === 'fixed' && (
+        <section>
+          <h2>Если будильник уже стоит на привычное время</h2>
+          <p>Куда попадёт будильник после отбоя в {page.time} при засыпании за {fallAsleep} минут:</p>
+          <div class="table-wrap">
+            <table>
+              <caption class="visually-hidden">Будильник на привычное время после отбоя в {page.time}</caption>
+              <thead>
+                <tr>
+                  <th scope="col">Будильник</th>
+                  <th scope="col">Сон</th>
+                  <th scope="col">Момент</th>
+                </tr>
+              </thead>
+              <tbody>
+                {fixedAlarms.map((a) => (
+                  <tr>
+                    <th scope="row">{a.time}</th>
+                    <td>{a.sleep}</td>
+                    <td class:list={['verdict', { good: a.good }]}>{a.verdict}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </section>
+      )
+    }
+
+    <h2>{fill(page.tip.title)}</h2>
+    <p>{fill(page.tip.text)}</p>
+
+    <h2>{faq.q}</h2>
+    <p>{faq.a}</p>
+
+    <nav class="neighbors" aria-label="Соседнее время">
+      {prev && <a href={url(slugFor(prev))}>← {otherLabel(prev)}</a>}
+      {next && <a class="next" href={url(slugFor(next))}>{otherLabel(next)} →</a>}
     </nav>
   </article>
 </Base>
 
 <style>
-  h1 {
-    margin-top: 0.75rem;
-    font-size: 1.5rem;
+  td {
+    font-weight: 600;
   }
-  .lead {
-    margin: 0.2rem 0 0;
-    color: var(--muted);
-    font-size: 0.95rem;
-    line-height: 1.4;
+  tr.current {
+    background: var(--surface-2);
   }
-  .table-wrap {
-    overflow-x: auto;
+  td.verdict {
+    font-weight: 400;
+    color: var(--short);
+  }
+  td.verdict.good {
+    color: var(--optimal);
+  }
+  .timeline {
     margin: 0 0 0.9rem;
+    padding: 0;
+    list-style: none;
   }
-  table {
-    width: 100%;
-    border-collapse: collapse;
+  .timeline li {
+    display: grid;
+    grid-template-columns: 3.6rem 1fr;
+    gap: 0.75rem;
+    padding: 0.45rem 0;
+    border-bottom: 1px solid var(--border);
+  }
+  .prose .timeline li + li {
+    margin-top: 0;
+  }
+  .tl-time {
+    font-weight: 700;
     font-variant-numeric: tabular-nums;
   }
-  th,
-  td {
-    padding: 0.55rem 0.5rem;
-    border-bottom: 1px solid var(--border);
-    text-align: left;
-  }
-  thead th {
-    font-size: 0.85rem;
-    color: var(--muted);
-    font-weight: 600;
-  }
-  td {
-    font-weight: 600;
+  .answer {
     font-size: 1.05rem;
   }
   .neighbors {

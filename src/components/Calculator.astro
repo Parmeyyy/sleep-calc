@@ -38,7 +38,7 @@ const tabs: { mode: Mode; label: string }[] = [
           role="tab"
           id={`calc-tab-${t.mode}`}
           data-mode={t.mode}
-          aria-selected={String(t.mode === mode)}
+          aria-selected={t.mode === mode ? 'true' : 'false'}
           aria-controls="calc-panel"
           tabindex={t.mode === mode ? 0 : -1}
         >
@@ -81,8 +81,14 @@ const tabs: { mode: Mode; label: string }[] = [
         ))
       }
     </ol>
+    <p class="calc-note" data-nearest-note hidden></p>
+    <p class="calc-note" data-custom hidden>
+      <span data-custom-text></span>
+      <button type="button" class="link-btn" data-reset>Сбросить</button>
+    </p>
   </div>
 
+  <div class="calc-foot">
   <details class="advanced">
     <summary>Дополнительные настройки</summary>
     <div class="range">
@@ -91,6 +97,8 @@ const tabs: { mode: Mode; label: string }[] = [
       <p class="hint">90 минут — среднее значение. Меняйте, только если знаете свой ритм.</p>
     </div>
   </details>
+  <button type="button" class="link-btn share" data-share hidden>Поделиться</button>
+  </div>
 </section>
 
 <style>
@@ -301,6 +309,60 @@ const tabs: { mode: Mode; label: string }[] = [
   .card[data-quality='normal'] .card-badge {
     background: var(--normal-bg);
     color: var(--normal);
+  }
+  .card[data-past] {
+    opacity: 0.45;
+    border-style: dashed;
+  }
+  .card[data-past] .card-time {
+    text-decoration: line-through;
+    text-decoration-thickness: 2px;
+  }
+  .card[data-nearest] {
+    outline: 3px solid var(--accent);
+    outline-offset: -1px;
+  }
+  .calc-note {
+    margin: 0.6rem 0 0;
+    font-size: 0.9rem;
+    color: var(--muted);
+  }
+  .calc-note[hidden] {
+    display: none;
+  }
+  .calc-note strong {
+    color: var(--text);
+    font-variant-numeric: tabular-nums;
+  }
+  .link-btn {
+    min-height: 32px;
+    padding: 0 0.25rem;
+    border: 0;
+    background: transparent;
+    color: var(--accent);
+    font: inherit;
+    text-decoration: underline;
+    text-underline-offset: 0.15em;
+    cursor: pointer;
+  }
+  .calc-foot {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 0 1rem;
+  }
+  .calc-foot .advanced {
+    flex: 1 1 0;
+    min-width: 0;
+  }
+  .share {
+    margin-top: 0.5rem;
+    min-height: 40px;
+    font-size: 0.95rem;
+  }
+  .share[hidden] {
+    display: none;
   }
   .card[data-quality='short'] .card-badge {
     background: var(--short-bg);

@@ -1,9 +1,12 @@
 import {
+  DEFAULT_SETTINGS,
   QUALITY_LABEL,
+  bedtimeTiming,
   calculate,
   cyclesLabel,
   formatDuration,
   formatTime,
+  isDefaultSettings,
   normalizeMinutes,
   parseTime,
   resultsHeading,
@@ -14,7 +17,7 @@ import {
 
 const STORAGE_KEY = 'sleep-calc:settings';
 
-function loadSettings(): Settings | null {
+export function loadSettings(): Settings | null {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
     return raw ? sanitizeSettings(JSON.parse(raw)) : null;
@@ -23,7 +26,7 @@ function loadSettings(): Settings | null {
   }
 }
 
-function saveSettings(settings: Settings): void {
+export function saveSettings(settings: Settings): void {
   try {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(settings));
   } catch {
@@ -56,6 +59,21 @@ export function initCalculator(root: HTMLElement): void {
     bed: parseTime(root.dataset.bed ?? '') ?? 23 * 60,
   };
 
+  const nearestNote = $<HTMLElement>('[data-nearest-note]');
+  const customNote = $<HTMLElement>('[data-custom]');
+  const customText = $<HTMLElement>('[data-custom-text]');
+  const shareBtn = $<HTMLButtonElement>('[data-share]');
+
+  // Время из ссылки: ?wake=07:15 или ?bed=23:10.
+  const params = new URLSearchParams(location.search);
+  for (const m of ['wake', 'bed'] as const) {
+    const fromUrl = parseTime(params.get(m) ?? '');
+    if (fromUrl !== null) {
+      times[m] = fromUrl;
+      mode = m;
+    }
+  }
+
   const stored = loadSettings();
   if (stored) {
     fall.value = String(stored.fallAsleep);
@@ -82,19 +100,55 @@ export function initCalculator(root: HTMLElement): void {
     if (timeInput.value !== value) timeInput.value = value;
 
     title.textContent = resultsHeading(mode, times[mode]);
-    calculate(mode, times[mode], s).forEach((o, i) => {
+    const options = calculate(mode, times[mode], s);
+    const now = nowMinutes();
+    const timing = mode === 'wake' ? bedtimeTiming(times.wake, now, s) : { past: [], nearest: -1 };
+    options.forEach((o, i) => {
       const c = cards[i];
+      const past = timing.past[i] === true;
       c.card.dataset.quality = o.quality;
+      c.card.toggleAttribute('data-past', past);
+      c.card.toggleAttribute('data-nearest', i === timing.nearest);
       c.time.textContent = o.time;
       c.cycles.textContent = cyclesLabel(o.cycles);
       c.dur.textContent = formatDuration(o.sleepMinutes);
-      c.badge.textContent = QUALITY_LABEL[o.quality];
+      c.badge.textContent = past ? 'прошло' : QUALITY_LABEL[o.quality];
     });
+
+    if (timing.nearest >= 0) {
+      const o = options[timing.nearest];
+      const strong = document.createElement('strong');
+      strong.textContent = o.time;
+      nearestNote.replaceChildren(
+        `Сейчас ${formatTime(now)}. Ближайший вариант, который ещё можно успеть: `,
+        strong,
+        `, ${cyclesLabel(o.cycles)} (${QUALITY_LABEL[o.quality]}).`,
+      );
+    }
+    nearestNote.hidden = timing.nearest < 0;
+
+    customNote.hidden = isDefaultSettings(s);
+    customText.textContent = `Расчёт с вашими настройками: засыпание ${s.fallAsleep} мин, цикл ${s.cycle} мин.`;
+  }
+
+  // Адрес страницы повторяет выбранное время: ссылку можно сохранить или отправить.
+  function syncUrl(): void {
+    const url = new URL(location.href);
+    url.searchParams.delete('wake');
+    url.searchParams.delete('bed');
+    url.searchParams.set(mode, formatTime(times[mode]));
+    // Двоеточие в запросе допустимо, а «07:15» читается лучше, чем «07%3A15».
+    history.replaceState(history.state, '', url.href.replace(/%3A/g, ':'));
+  }
+
+  function changed(): void {
+    render();
+    syncUrl();
   }
 
   function setMode(next: Mode): void {
     mode = next;
-    render();
+    changed();
   }
 
   tabs.forEach((tab, i) => {
@@ -112,7 +166,7 @@ export function initCalculator(root: HTMLElement): void {
     const m = parseTime(timeInput.value);
     if (m === null) return;
     times[mode] = m;
-    render();
+    changed();
   });
   // Пустое поле (стёрли время) — возвращаем последнее корректное значение.
   timeInput.addEventListener('blur', render);
@@ -121,7 +175,7 @@ export function initCalculator(root: HTMLElement): void {
   for (const btn of root.querySelectorAll<HTMLButtonElement>('[data-step]')) {
     const step = () => {
       times[mode] = normalizeMinutes(times[mode] + Number(btn.dataset.step));
-      render();
+      changed();
     };
     let delay: number | undefined;
     let repeat: number | undefined;
@@ -148,8 +202,7 @@ export function initCalculator(root: HTMLElement): void {
 
 
   $<HTMLButtonElement>('[data-now]').addEventListener('click', () => {
-    const now = new Date();
-    times.bed = now.getHours() * 60 + now.getMinutes();
+    times.bed = nowMinutes();
     setMode('bed');
   });
 
@@ -160,5 +213,39 @@ export function initCalculator(root: HTMLElement): void {
     });
   }
 
+  $<HTMLButtonElement>('[data-reset]').addEventListener('click', () => {
+    fall.value = String(DEFAULT_SETTINGS.fallAsleep);
+    cycle.value = String(DEFAULT_SETTINGS.cycle);
+    saveSettings(DEFAULT_SETTINGS);
+    render();
+  });
+
+  const canShare = typeof navigator.share === 'function';
+  if (canShare || navigator.clipboard) {
+    shareBtn.hidden = false;
+    shareBtn.addEventListener('click', async () => {
+      syncUrl();
+      const data = { title: document.title, text: title.textContent ?? '', url: location.href };
+      try {
+        if (canShare) {
+          await navigator.share(data);
+        } else {
+          await navigator.clipboard.writeText(data.url);
+          shareBtn.textContent = 'Ссылка скопирована';
+          setTimeout(() => (shareBtn.textContent = 'Поделиться'), 2000);
+        }
+      } catch {
+        // Пользователь закрыл окно «Поделиться» — ничего не делаем.
+      }
+    });
+  }
+
   render();
+  // Пометки «прошло» зависят от текущего времени.
+  setInterval(render, 30_000);
+}
+
+function nowMinutes(): number {
+  const d = new Date();
+  return d.getHours() * 60 + d.getMinutes();
 }

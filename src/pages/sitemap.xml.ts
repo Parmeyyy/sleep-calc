@@ -1,9 +1,10 @@
 import type { APIRoute } from 'astro';
-import { WAKE_PAGES, slugFor } from '../data/wake-pages';
+import { ARTICLES } from '../data/pages';
+import { TIME_PAGES, slugFor } from '../data/time-pages';
 import { absoluteUrl } from '../lib/site';
 
 export const GET: APIRoute = ({ site }) => {
-  const paths = ['', ...WAKE_PAGES.map((p) => `${slugFor(p.time)}/`)];
+  const paths = ['', ...ARTICLES.map((a) => `${a.path}/`), ...TIME_PAGES.map((p) => `${slugFor(p)}/`)];
   const urls = paths
     .map((p) => `  <url><loc>${absoluteUrl(p, site)}</loc><priority>${p ? '0.8' : '1.0'}</priority></url>`)
     .join('\n');

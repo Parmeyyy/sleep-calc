@@ -8,7 +8,7 @@ import { FAQ } from '../data/faq';
 import { absoluteUrl } from '../lib/site';
 import { faqPage, webApplication } from '../lib/jsonld';
 
-const title = 'Калькулятор сна — во сколько лечь и когда встать по циклам сна';
+const title = 'Калькулятор сна: во сколько лечь и когда встать по циклам';
 const description =
   'Бесплатный калькулятор сна: узнайте, во сколько лечь, чтобы встать в нужное время, или когда ставить будильник, если ложитесь сейчас. Учитывает время засыпания и циклы по 90 минут.';
 ---
@@ -19,7 +19,7 @@ const description =
   path=""
   jsonLd={[webApplication(absoluteUrl('', Astro.site), description), faqPage(FAQ)]}
 >
-  <h1>Калькулятор сна</h1>
+  <h1 class="page-title">Калькулятор сна</h1>
   <p class="lead">Когда лечь и когда встать — по циклам сна.</p>
 
   <Calculator />
@@ -31,16 +31,3 @@ const description =
     <Faq />
   </div>
 </Base>
-
-<style>
-  h1 {
-    margin-top: 0.75rem;
-    font-size: 1.5rem;
-  }
-  .lead {
-    margin: 0.2rem 0 0;
-    color: var(--muted);
-    font-size: 0.95rem;
-    line-height: 1.4;
-  }
-</style>

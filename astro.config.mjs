@@ -1,6 +1,6 @@
 import { defineConfig } from 'astro/config';
 import { SITE_URL } from './site.config.mjs';
-import serviceWorker from './integrations/service-worker.mjs';
+import postbuild from './integrations/postbuild.mjs';
 
 const url = new URL(SITE_URL);
 
@@ -12,5 +12,5 @@ export default defineConfig({
     format: 'directory',
     inlineStylesheets: 'always',
   },
-  integrations: [serviceWorker()],
+  integrations: [postbuild()],
 });

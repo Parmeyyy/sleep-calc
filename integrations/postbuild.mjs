@@ -1,5 +1,6 @@
-// Генерирует dist/sw.js после сборки: precache всех файлов сайта,
-// версия кэша = хэш содержимого, поэтому каждый деплой обновляет кэш.
+// После сборки: 1) типограф для всех HTML-страниц; 2) dist/sw.js с precache всех файлов сайта.
+// Версия кэша = хэш содержимого, поэтому каждый деплой обновляет кэш.
+import { typographHtml } from '../src/lib/typograph.ts';
 import { createHash } from 'node:crypto';
 import { readdir, readFile, writeFile } from 'node:fs/promises';
 import { join, relative, sep } from 'node:path';
@@ -71,19 +72,23 @@ self.addEventListener('fetch', (event) => {
 `;
 }
 
-export default function serviceWorker() {
+export default function postbuild() {
   let base = '/';
   return {
-    name: 'sleep-calc:service-worker',
+    name: 'sleep-calc:postbuild',
     hooks: {
       'astro:config:done': ({ config }) => {
         base = config.base.endsWith('/') ? config.base : `${config.base}/`;
       },
       'astro:build:done': async ({ dir, logger }) => {
         const root = fileURLToPath(dir);
+        const files = (await walk(root)).sort();
+        for (const file of files.filter((f) => f.endsWith('.html'))) {
+          await writeFile(file, typographHtml(await readFile(file, 'utf8')));
+        }
         const hash = createHash('sha256');
         const assets = [];
-        for (const file of (await walk(root)).sort()) {
+        for (const file of files) {
           let rel = relative(root, file).split(sep).join('/');
           if (SKIP.has(rel)) continue;
           hash.update(rel).update(await readFile(file));

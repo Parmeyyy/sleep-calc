@@ -54,14 +54,17 @@ export function formatTime(minutes: number): string {
   return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
 }
 
-/** 450 → «7 ч 30 мин», 360 → «6 ч», 45 → «45 мин». */
+/** Неразрывный пробел: число не отрывается от единицы при переносе строки. */
+export const NBSP = '\u00A0';
+
+/** 450 → «7 ч 30 мин», 360 → «6 ч», 45 → «45 мин» (между числом и единицей — неразрывный пробел). */
 export function formatDuration(minutes: number): string {
   const total = Math.max(0, Math.round(minutes));
   const h = Math.floor(total / 60);
   const m = total % 60;
-  if (h === 0) return `${m} мин`;
-  if (m === 0) return `${h} ч`;
-  return `${h} ч ${m} мин`;
+  if (h === 0) return `${m}${NBSP}мин`;
+  if (m === 0) return `${h}${NBSP}ч`;
+  return `${h}${NBSP}ч${NBSP}${m}${NBSP}мин`;
 }
 
 /** Русское склонение: 1 цикл, 2 цикла, 5 циклов. */
@@ -74,7 +77,7 @@ export function pluralRu(n: number, one: string, few: string, many: string): str
 }
 
 export function cyclesLabel(n: number): string {
-  return `${n} ${pluralRu(n, 'цикл', 'цикла', 'циклов')}`;
+  return `${n}${NBSP}${pluralRu(n, 'цикл', 'цикла', 'циклов')}`;
 }
 
 export function qualityOf(cycles: number): Quality {
@@ -149,4 +152,65 @@ export function resultsHeading(mode: Mode, minutes: number): string {
   return mode === 'wake'
     ? `Если хотите встать в ${t}, ложитесь в:`
     : `Если ляжете в ${t}, вставайте в:`;
+}
+
+export interface Timing {
+  /** past[i] — вариант options[i] сегодня уже прошёл. */
+  past: boolean[];
+  /** Индекс ближайшего варианта, который ещё можно успеть, или -1. */
+  nearest: number;
+}
+
+/**
+ * Для режима «Хочу встать в…»: какие варианты отбоя уже прошли к моменту now.
+ * Подъём — ближайшее наступление времени wake после now. Помечаем только когда
+ * часть вариантов прошла, а часть ещё впереди: если всё впереди, пользователь
+ * планирует заранее; если всё позади, подсказывать нечего.
+ */
+export function bedtimeTiming(wakeMinutes: number, nowMinutes: number, settings: Settings = DEFAULT_SETTINGS): Timing {
+  const { fallAsleep, cycle } = sanitizeSettings(settings);
+  const untilWake = normalizeMinutes(wakeMinutes - nowMinutes) || MINUTES_IN_DAY;
+  const past: boolean[] = [];
+  for (let k = MAX_CYCLES; k >= 1; k--) past.push(fallAsleep + k * cycle > untilWake);
+  const pastCount = past.filter(Boolean).length;
+  if (pastCount === 0 || pastCount === past.length) {
+    return { past: past.map(() => false), nearest: -1 };
+  }
+  return { past, nearest: pastCount };
+}
+
+export interface NapOption {
+  /** Сколько длится сам сон, минуты. */
+  sleepMinutes: number;
+  /** Время будильника, HH:MM. */
+  time: string;
+  minutes: number;
+}
+
+/** Дневной сон: будильник = начало + засыпание + длительность. 10 и 20 минут и один полный цикл. */
+export function napOptions(startMinutes: number, settings: Settings = DEFAULT_SETTINGS): NapOption[] {
+  const { fallAsleep, cycle } = sanitizeSettings(settings);
+  return [10, 20, cycle].map((sleepMinutes) => {
+    const minutes = normalizeMinutes(startMinutes + fallAsleep + sleepMinutes);
+    return { sleepMinutes, minutes, time: formatTime(minutes) };
+  });
+}
+
+export function isDefaultSettings(settings: Settings): boolean {
+  return settings.fallAsleep === DEFAULT_SETTINGS.fallAsleep && settings.cycle === DEFAULT_SETTINGS.cycle;
+}
+
+export interface AlarmFit {
+  /** Чистый сон от засыпания до будильника, минуты. */
+  sleepMinutes: number;
+  fullCycles: number;
+  /** Сколько минут идёт текущий цикл в момент будильника (0 — ровно граница). */
+  intoCycle: number;
+}
+
+/** Куда попадает будильник wake, если лечь в bed. */
+export function alarmFit(bedMinutes: number, wakeMinutes: number, settings: Settings = DEFAULT_SETTINGS): AlarmFit {
+  const { fallAsleep, cycle } = sanitizeSettings(settings);
+  const sleepMinutes = normalizeMinutes(wakeMinutes - bedMinutes - fallAsleep);
+  return { sleepMinutes, fullCycles: Math.floor(sleepMinutes / cycle), intoCycle: sleepMinutes % cycle };
 }
