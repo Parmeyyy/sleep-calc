@@ -52,10 +52,8 @@ const description = `Чтобы встать в ${page.time} бодрым, ло�
     ]),
   ]}
 >
-  <nav class="crumbs" aria-label="Навигация">
-    <a href={url()}>Калькулятор сна</a> <span aria-hidden="true">›</span> <span>Встать в {page.time}</span>
-  </nav>
-  <h1>Во сколько лечь, чтобы встать в {page.time}</h1>
+  <h1>Калькулятор сна</h1>
+  <p class="lead">Во сколько лечь, чтобы встать в {page.time}</p>
 
   <Calculator mode="wake" wake={page.time} />
 
@@ -123,14 +121,15 @@ const description = `Чтобы встать в ${page.time} бодрым, ло�
 </Base>
 
 <style>
-  .crumbs {
-    margin-top: 0.75rem;
-    font-size: 0.85rem;
-    color: var(--muted);
-  }
   h1 {
-    margin-top: 0.25rem;
-    font-size: 1.45rem;
+    margin-top: 0.75rem;
+    font-size: 1.5rem;
+  }
+  .lead {
+    margin: 0.2rem 0 0;
+    color: var(--muted);
+    font-size: 0.95rem;
+    line-height: 1.4;
   }
   .table-wrap {
     overflow-x: auto;

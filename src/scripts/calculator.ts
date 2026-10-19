@@ -13,7 +13,6 @@ import {
 } from '../lib/sleep';
 
 const STORAGE_KEY = 'sleep-calc:settings';
-const FINE_KEY = 'sleep-calc:fine';
 
 function loadSettings(): Settings | null {
   try {
@@ -77,7 +76,7 @@ export function initCalculator(root: HTMLElement): void {
       if (active) panel.setAttribute('aria-labelledby', tab.id);
     }
     root.dataset.mode = mode;
-    timeLabel.textContent = mode === 'wake' ? 'Подъём' : 'Отбой';
+    timeLabel.textContent = mode === 'wake' ? 'Время подъёма' : 'Время отбоя';
 
     const value = formatTime(times[mode]);
     if (timeInput.value !== value) timeInput.value = value;
@@ -147,22 +146,6 @@ export function initCalculator(root: HTMLElement): void {
     });
   }
 
-  const fineToggle = $<HTMLInputElement>('#calc-fine-toggle');
-  const finePanel = $<HTMLElement>('#calc-fine');
-  const applyFine = () => {
-    finePanel.hidden = !fineToggle.checked;
-    fineToggle.setAttribute('aria-expanded', String(fineToggle.checked));
-  };
-  try {
-    fineToggle.checked = localStorage.getItem(FINE_KEY) === '1';
-  } catch {}
-  applyFine();
-  fineToggle.addEventListener('change', () => {
-    applyFine();
-    try {
-      localStorage.setItem(FINE_KEY, fineToggle.checked ? '1' : '0');
-    } catch {}
-  });
 
   $<HTMLButtonElement>('[data-now]').addEventListener('click', () => {
     const now = new Date();
