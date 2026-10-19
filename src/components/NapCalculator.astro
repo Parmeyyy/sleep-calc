@@ -13,11 +13,6 @@ const notes = ['самый короткий', 'короткий', 'полный 
   </div>
   <input id="nap-time" class="time" type="time" value={start} step="60" required />
 
-  <div class="range">
-    <label for="nap-fall">Засыпаю за</label>
-    <input id="nap-fall" type="range" min={FALL_ASLEEP.min} max={FALL_ASLEEP.max} step="5" value={DEFAULT_SETTINGS.fallAsleep} />
-    <output id="nap-fall-out" for="nap-fall">{DEFAULT_SETTINGS.fallAsleep} мин</output>
-  </div>
 
   <h2 id="nap-title" aria-live="polite">Если ляжете в {start}, ставьте будильник на:</h2>
   <ol class="cards">
@@ -31,6 +26,11 @@ const notes = ['самый короткий', 'короткий', 'полный 
       ))
     }
   </ol>
+  <div class="range">
+    <label for="nap-fall">Засыпаю за</label>
+    <input id="nap-fall" type="range" min={FALL_ASLEEP.min} max={FALL_ASLEEP.max} step="5" value={DEFAULT_SETTINGS.fallAsleep} />
+    <output id="nap-fall-out" for="nap-fall">{DEFAULT_SETTINGS.fallAsleep} мин</output>
+  </div>
 </section>
 
 <style>
@@ -88,7 +88,7 @@ const notes = ['самый короткий', 'короткий', 'полный 
     grid-template-columns: auto 1fr 4.2em;
     align-items: center;
     gap: 0.75rem;
-    margin-top: 0.7rem;
+    margin-top: 0.9rem;
     font-size: 0.95rem;
     color: var(--muted);
   }

@@ -58,13 +58,6 @@ const tabs: { mode: Mode; label: string }[] = [
       <input id="calc-time" class="time" type="time" value={mode === 'wake' ? wake : bed} step="60" required />
       <button type="button" class="step" data-step="15" aria-label="На 15 минут позже">+</button>
     </div>
-
-    <div class="range inline">
-      <label for="calc-fall">Засыпаю за</label>
-      <input id="calc-fall" type="range" min={FALL_ASLEEP.min} max={FALL_ASLEEP.max} step="5" value={DEFAULT_SETTINGS.fallAsleep} />
-      <output id="calc-fall-out" for="calc-fall">{DEFAULT_SETTINGS.fallAsleep} мин</output>
-    </div>
-
   </div>
 
   <div class="results">
@@ -86,6 +79,12 @@ const tabs: { mode: Mode; label: string }[] = [
       <span data-custom-text></span>
       <button type="button" class="link-btn" data-reset>Сбросить</button>
     </p>
+  </div>
+
+  <div class="range inline">
+    <label for="calc-fall">Засыпаю за</label>
+    <input id="calc-fall" type="range" min={FALL_ASLEEP.min} max={FALL_ASLEEP.max} step="5" value={DEFAULT_SETTINGS.fallAsleep} />
+    <output id="calc-fall-out" for="calc-fall">{DEFAULT_SETTINGS.fallAsleep} мин</output>
   </div>
 
   <div class="calc-foot">
@@ -206,6 +205,9 @@ const tabs: { mode: Mode; label: string }[] = [
 
   .range {
     margin-top: 0.7rem;
+  }
+  .range.inline {
+    margin-top: 0.9rem;
   }
   .range label {
     display: flex;
