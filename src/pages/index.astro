@@ -1,0 +1,46 @@
+---
+import Base from '../layouts/Base.astro';
+import Calculator from '../components/Calculator.astro';
+import AdSlot from '../components/AdSlot.astro';
+import HowItWorks from '../components/HowItWorks.astro';
+import Faq from '../components/Faq.astro';
+import { FAQ } from '../data/faq';
+import { absoluteUrl } from '../lib/site';
+import { faqPage, webApplication } from '../lib/jsonld';
+
+const title = 'Калькулятор сна — во сколько лечь и когда встать по циклам сна';
+const description =
+  'Бесплатный калькулятор сна: узнайте, во сколько лечь, чтобы встать в нужное время, или когда ставить будильник, если ложитесь сейчас. Учитывает время засыпания и циклы по 90 минут.';
+---
+
+<Base
+  title={title}
+  description={description}
+  path=""
+  jsonLd={[webApplication(absoluteUrl('', Astro.site), description), faqPage(FAQ)]}
+>
+  <h1>Калькулятор сна</h1>
+  <p class="lead">Когда лечь и когда встать — по циклам сна.</p>
+
+  <Calculator />
+
+  <AdSlot />
+
+  <div class="prose">
+    <HowItWorks />
+    <Faq />
+  </div>
+</Base>
+
+<style>
+  h1 {
+    margin-top: 0.75rem;
+    font-size: 1.5rem;
+  }
+  .lead {
+    margin: 0.2rem 0 0;
+    color: var(--muted);
+    font-size: 0.95rem;
+    line-height: 1.4;
+  }
+</style>

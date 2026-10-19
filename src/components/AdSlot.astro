@@ -1,0 +1,22 @@
+---
+// Место под один блок РСЯ. Пока ADS.enabled = false, контейнер не выводится в вёрстку
+// вообще (display: none), поэтому ничего не сдвигает. После включения высота
+// зарезервирована заранее (min-height), и загрузка рекламы не вызывает CLS.
+import { ADS } from '../../site.config.mjs';
+---
+
+<aside class="ad-slot" data-enabled={String(ADS.enabled)} aria-label="Реклама">
+  {ADS.enabled && ADS.blockId && <div id={`yandex_rtb_${ADS.blockId}`} />}
+</aside>
+
+<style>
+  .ad-slot {
+    min-height: 280px;
+    margin: 2rem 0 0;
+    contain: layout;
+    overflow: hidden;
+  }
+  .ad-slot[data-enabled='false'] {
+    display: none;
+  }
+</style>

@@ -1,0 +1,81 @@
+---
+import '../styles/global.css';
+import { SITE_NAME } from '../../site.config.mjs';
+import { absoluteUrl, url } from '../lib/site';
+import Header from '../components/Header.astro';
+import Footer from '../components/Footer.astro';
+
+interface Props {
+  title: string;
+  description: string;
+  /** Путь страницы относительно корня сайта, без base: '' или 'vo-skolko-.../'. */
+  path: string;
+  jsonLd?: object[];
+  noindex?: boolean;
+}
+
+const { title, description, path, jsonLd = [], noindex = false } = Astro.props;
+const canonical = absoluteUrl(path, Astro.site);
+const ogImage = absoluteUrl('og.png', Astro.site);
+---
+
+<!doctype html>
+<html lang="ru">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <title>{title}</title>
+    <meta name="description" content={description} />
+    <link rel="canonical" href={canonical} />
+    {noindex && <meta name="robots" content="noindex" />}
+
+    <meta property="og:type" content="website" />
+    <meta property="og:locale" content="ru_RU" />
+    <meta property="og:site_name" content={SITE_NAME} />
+    <meta property="og:title" content={title} />
+    <meta property="og:description" content={description} />
+    <meta property="og:url" content={canonical} />
+    <meta property="og:image" content={ogImage} />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta name="twitter:card" content="summary_large_image" />
+
+    <meta name="theme-color" content="#f5f6fb" media="(prefers-color-scheme: light)" />
+    <meta name="theme-color" content="#0b1020" media="(prefers-color-scheme: dark)" />
+    <link rel="icon" href={url('favicon.svg')} type="image/svg+xml" />
+    <link rel="icon" href={url('favicon-32.png')} sizes="32x32" type="image/png" />
+    <link rel="apple-touch-icon" href={url('apple-touch-icon.png')} />
+    <link rel="manifest" href={url('manifest.webmanifest')} />
+
+    <!-- Тема до первой отрисовки: без мигания. -->
+    <script is:inline>
+      (function () {
+        try {
+          var t = localStorage.getItem('sleep-calc:theme');
+          if (t === 'dark' || t === 'light') document.documentElement.setAttribute('data-theme', t);
+        } catch (e) {}
+      })();
+    </script>
+
+    {jsonLd.map((data) => <script type="application/ld+json" set:html={JSON.stringify(data)} />)}
+
+    <!-- Яндекс Метрика: вставить счётчик сюда (см. README). -->
+  </head>
+  <body>
+    <Header />
+    <main class="wrap">
+      <slot />
+    </main>
+    <Footer />
+
+    {import.meta.env.PROD && (
+      <script is:inline define:vars={{ sw: url('sw.js'), scope: url() }}>
+      if ('serviceWorker' in navigator && window.isSecureContext) {
+        addEventListener('load', function () {
+          navigator.serviceWorker.register(sw, { scope: scope }).catch(function () {});
+        });
+      }
+      </script>
+    )}
+  </body>
+</html>

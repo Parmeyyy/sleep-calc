@@ -1,0 +1,156 @@
+:root {
+  color-scheme: light;
+  --bg: #f5f6fb;
+  --surface: #ffffff;
+  --surface-2: #eceef7;
+  --border: #d9dcea;
+  --text: #141a30;
+  --muted: #535b78;
+  --accent: #3349c4;
+  --accent-contrast: #ffffff;
+  --optimal: #0b7a52;
+  --optimal-bg: #e3f5ec;
+  --normal: #8a5a00;
+  --normal-bg: #fbf1dc;
+  --short: #a8312a;
+  --short-bg: #fbe9e7;
+  --radius: 14px;
+  --font: system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme='light']) {
+    color-scheme: dark;
+    --bg: #0b1020;
+    --surface: #141a30;
+    --surface-2: #1c2440;
+    --border: #2a3354;
+    --text: #e8ebf7;
+    --muted: #a3abc8;
+    --accent: #9db1ff;
+    --accent-contrast: #0b1020;
+    --optimal: #6ddcab;
+    --optimal-bg: #12302a;
+    --normal: #f2c46d;
+    --normal-bg: #33291a;
+    --short: #f39b93;
+    --short-bg: #35191d;
+  }
+}
+
+:root[data-theme='dark'] {
+  color-scheme: dark;
+  --bg: #0b1020;
+  --surface: #141a30;
+  --surface-2: #1c2440;
+  --border: #2a3354;
+  --text: #e8ebf7;
+  --muted: #a3abc8;
+  --accent: #9db1ff;
+  --accent-contrast: #0b1020;
+  --optimal: #6ddcab;
+  --optimal-bg: #12302a;
+  --normal: #f2c46d;
+  --normal-bg: #33291a;
+  --short: #f39b93;
+  --short-bg: #35191d;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html {
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+}
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font);
+  font-size: 1rem;
+  line-height: 1.55;
+  -webkit-font-smoothing: antialiased;
+}
+
+a {
+  color: var(--accent);
+  text-underline-offset: 0.15em;
+}
+
+:focus-visible {
+  outline: 3px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.wrap {
+  width: 100%;
+  max-width: 44rem;
+  margin: 0 auto;
+  padding: 0 16px;
+}
+
+h1,
+h2,
+h3 {
+  line-height: 1.2;
+  margin: 0;
+}
+
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+.prose {
+  margin-top: 2.5rem;
+}
+
+.prose h2 {
+  font-size: 1.35rem;
+  margin: 2rem 0 0.75rem;
+}
+
+.prose h3 {
+  font-size: 1.05rem;
+  margin: 1.25rem 0 0.4rem;
+}
+
+.prose p,
+.prose ul,
+.prose ol {
+  margin: 0 0 0.9rem;
+}
+
+.prose ul,
+.prose ol {
+  padding-left: 1.25rem;
+}
+
+.prose li + li {
+  margin-top: 0.35rem;
+}
+
+.note {
+  font-size: 0.9rem;
+  color: var(--muted);
+  border-left: 3px solid var(--border);
+  padding: 0.25rem 0 0.25rem 0.75rem;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  * {
+    transition: none !important;
+  }
+}

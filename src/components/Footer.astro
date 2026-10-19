@@ -1,0 +1,55 @@
+---
+import { WAKE_PAGES, slugFor } from '../data/wake-pages';
+import { url } from '../lib/site';
+---
+
+<footer class="site-footer">
+  <div class="wrap">
+    <nav aria-label="Во сколько лечь, чтобы встать в…">
+      <p class="nav-title">Во сколько лечь, чтобы встать в:</p>
+      <ul class="times">
+        {WAKE_PAGES.map((p) => <li><a href={url(slugFor(p.time))}>{p.time}</a></li>)}
+      </ul>
+    </nav>
+    <p class="disclaimer">
+      Калькулятор носит информационный характер и не является медицинской рекомендацией. При проблемах со сном
+      обратитесь к врачу.
+    </p>
+  </div>
+</footer>
+
+<style>
+  .site-footer {
+    margin-top: 3rem;
+    padding: 1.5rem 0 2.5rem;
+    border-top: 1px solid var(--border);
+    font-size: 0.9rem;
+    color: var(--muted);
+  }
+  .nav-title {
+    margin: 0 0 0.5rem;
+  }
+  .times {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.4rem;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+  .times a {
+    display: inline-block;
+    min-width: 44px;
+    padding: 0.5rem 0.65rem;
+    border: 1px solid var(--border);
+    border-radius: 999px;
+    text-decoration: none;
+    font-variant-numeric: tabular-nums;
+  }
+  .times a:hover {
+    background: var(--surface-2);
+  }
+  .disclaimer {
+    margin: 1.25rem 0 0;
+  }
+</style>

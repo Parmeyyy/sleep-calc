@@ -1,0 +1,11 @@
+---
+import Base from '../layouts/Base.astro';
+import { url } from '../lib/site';
+---
+
+<Base title="Страница не найдена — Калькулятор сна" description="Такой страницы нет. Вернитесь к калькулятору сна." path="404/" noindex>
+  <div class="prose">
+    <h1>Страница не найдена</h1>
+    <p>Возможно, ссылка устарела. <a href={url()}>Вернуться к калькулятору сна</a>.</p>
+  </div>
+</Base>

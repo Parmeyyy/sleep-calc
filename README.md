@@ -1,0 +1,96 @@
+# Калькулятор сна
+
+Статический сайт на Astro: во сколько лечь, чтобы встать в нужное время, и когда вставать, если ложишься сейчас. Считает по циклам сна с учётом времени засыпания.
+
+**Сайт:** https://parmeyyy.github.io/sleep-calc/
+
+- без внешних CDN, шрифтов, аналитики и cookies; шрифты системные;
+- ~10 КБ на страницу (gzip), JS — только калькулятор и переключатель темы;
+- PWA: работает офлайн, можно добавить на главный экран;
+- главная + 9 посадочных страниц «во сколько лечь, чтобы встать в 05:00…09:00».
+
+## Команды
+
+```sh
+npm install
+npm run dev       # http://localhost:4321/sleep-calc/
+npm test          # юнит-тесты логики (vitest)
+npm run build     # сборка в dist/ (+ генерация sw.js)
+npm run preview   # локальная проверка собранного сайта
+npm run icons     # перегенерировать иконки и og.png из scripts/make-icons.mjs
+```
+
+Деплой — автоматически при пуше в `main` (`.github/workflows/deploy.yml`: тесты → сборка → GitHub Pages).
+
+## Структура
+
+| Путь | Что там |
+| --- | --- |
+| `site.config.mjs` | адрес сайта, название, настройки рекламы |
+| `src/lib/sleep.ts` | вся логика расчёта (чистые функции) + `sleep.test.ts` |
+| `src/scripts/calculator.ts` | клиентский скрипт калькулятора, localStorage |
+| `src/components/` | калькулятор, шапка, подвал, «Как это работает», FAQ, блок рекламы |
+| `src/data/faq.ts` | вопросы FAQ (они же идут в JSON-LD FAQPage) |
+| `src/data/wake-pages.ts` | тексты посадочных страниц |
+| `src/pages/` | главная, `[slug].astro` (посадочные), 404, sitemap.xml, robots.txt, manifest |
+| `integrations/service-worker.mjs` | после сборки генерирует `dist/sw.js` со списком файлов для офлайна |
+
+## Как переехать на свой домен
+
+1. В `site.config.mjs` поменяйте одну строку:
+   ```js
+   export const SITE_URL = process.env.SITE_URL || 'https://ваш-домен.ru/';
+   ```
+   Base path, canonical, sitemap, robots.txt, manifest и service worker пересчитаются автоматически.
+2. Добавьте файл `public/CNAME` с одной строкой: `ваш-домен.ru`.
+3. У регистратора домена создайте DNS-записи для GitHub Pages: четыре `A`-записи на `185.199.108.153`, `185.199.109.153`, `185.199.110.153`, `185.199.111.153` (и при желании `CNAME` для `www` → `parmeyyy.github.io`).
+4. В репозитории: Settings → Pages → Custom domain → `ваш-домен.ru`, включите Enforce HTTPS.
+5. Запушьте — сайт соберётся уже под новый адрес.
+
+> На GitHub Pages по подпути `/sleep-calc/` поисковики не читают `robots.txt` (он должен лежать в корне домена). После переезда на свой домен он заработает сам. До этого sitemap можно добавить вручную в Яндекс.Вебмастере и Google Search Console: `https://parmeyyy.github.io/sleep-calc/sitemap.xml`.
+
+## Куда вставить Яндекс Метрику
+
+В `src/layouts/Base.astro` в `<head>` есть комментарий `<!-- Яндекс Метрика: вставить счётчик сюда -->`. Вставьте туда код счётчика, обернув `<script>` в `is:inline`, чтобы Astro не пытался его бандлить:
+
+```astro
+<script is:inline>
+  (function(m,e,t,r,i,k,a){ /* код из интерфейса Метрики */ })(...);
+  ym(XXXXXXXX, 'init', { /* ... */ });
+</script>
+<noscript><div><img src="https://mc.yandex.ru/watch/XXXXXXXX" style="position:absolute; left:-9999px;" alt="" /></div></noscript>
+```
+
+Счётчик ставит cookies — после подключения добавьте на сайт уведомление о cookies и политику конфиденциальности (требование 152-ФЗ).
+
+Service worker перехватывает только запросы к своему сайту, поэтому запросы к `mc.yandex.ru` идут напрямую.
+
+## Реклама РСЯ
+
+Под калькулятором стоит `<AdSlot />` (`src/components/AdSlot.astro`). Пока в `site.config.mjs` `ADS.enabled = false`, блок скрыт (`display: none`) и не занимает места.
+
+Чтобы включить:
+
+1. В `site.config.mjs`: `enabled: true`, `blockId: 'R-A-XXXXXXX-1'`.
+2. Вставьте загрузчик РСЯ в `<head>` в `Base.astro` рядом с Метрикой:
+   ```astro
+   <script is:inline>window.yaContextCb = window.yaContextCb || []</script>
+   <script is:inline src="https://yandex.ru/ads/system/context.js" async></script>
+   ```
+3. В `AdSlot.astro` после контейнера добавьте вызов отрисовки:
+   ```astro
+   <script is:inline define:vars={{ id: ADS.blockId }}>
+     window.yaContextCb.push(() => Ya.Context.AdvManager.render({ blockId: id, renderTo: 'yandex_rtb_' + id }));
+   </script>
+   ```
+
+Высота блока зарезервирована (`min-height: 280px`), поэтому показ рекламы не сдвигает вёрстку. Подстройте её под реальный формат блока.
+
+## Логика расчёта
+
+- «Хочу встать в…»: отбой = подъём − засыпание − k × цикл, k = 6…1;
+- «Ложусь в…» и «Ложусь сейчас»: подъём = отбой + засыпание + k × цикл, k = 1…6;
+- 5–6 циклов — «оптимально», 4 — «нормально», 1–3 — «мало»;
+- засыпание 0–60 мин (по умолчанию 15), цикл 70–120 мин (по умолчанию 90), настройки сохраняются в `localStorage`.
+
+Калькулятор носит информационный характер и не является медицинской рекомендацией.

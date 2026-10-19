@@ -1,0 +1,54 @@
+---
+import { FAQ } from '../data/faq';
+---
+
+<section class="faq" aria-labelledby="faq-title">
+  <h2 id="faq-title">Частые вопросы</h2>
+  {
+    FAQ.map((item) => (
+      <details>
+        <summary>
+          <h3>{item.q}</h3>
+        </summary>
+        <p>{item.a}</p>
+      </details>
+    ))
+  }
+</section>
+
+<style>
+  .faq details {
+    border-bottom: 1px solid var(--border);
+  }
+  .faq summary {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    min-height: 48px;
+    padding: 0.6rem 0;
+    cursor: pointer;
+    list-style: none;
+  }
+  .faq summary::-webkit-details-marker {
+    display: none;
+  }
+  .faq summary::after {
+    content: '+';
+    flex: none;
+    font-size: 1.4rem;
+    line-height: 1;
+    color: var(--accent);
+  }
+  .faq details[open] summary::after {
+    content: '−';
+  }
+  .faq h3 {
+    margin: 0;
+    font-size: 1rem;
+    font-weight: 600;
+  }
+  .faq p {
+    margin: 0 0 1rem;
+  }
+</style>
