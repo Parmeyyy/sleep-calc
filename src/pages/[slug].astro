@@ -3,6 +3,7 @@ import type { GetStaticPaths } from 'astro';
 import Base from '../layouts/Base.astro';
 import Calculator from '../components/Calculator.astro';
 import AdSlot from '../components/AdSlot.astro';
+import Highlights from '../components/Highlights.astro';
 import { TIME_PAGES, fillText, pageQuestion, slugFor, type TimePage } from '../data/time-pages';
 import { absoluteUrl, url } from '../lib/site';
 import { breadcrumbs, faqPage, webApplication } from '../lib/jsonld';
@@ -111,6 +112,8 @@ const otherLabel = (p: TimePage) => (p.kind === 'wake' ? `Встать в ${p.ti
   <p class="lead">{question}</p>
 
   {isWake ? <Calculator mode="wake" wake={page.time} /> : <Calculator mode="bed" bed={page.time} />}
+
+  <Highlights />
 
   <AdSlot />
 

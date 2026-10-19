@@ -1,0 +1,73 @@
+---
+import { url } from '../lib/site';
+
+const items = [
+  {
+    href: url('skolko-nuzhno-spat'),
+    value: '7–9 ч',
+    title: 'Сколько нужно спать',
+    text: 'Нормы сна для детей, взрослых и людей старше 65 лет',
+  },
+  {
+    href: url('dnevnoy-son'),
+    value: '10–20 мин',
+    title: 'Дневной сон',
+    text: 'Когда ставить будильник, чтобы легко проснуться днём',
+  },
+];
+---
+
+<nav class="highlights" aria-label="Полезное о сне">
+  {
+    items.map((i) => (
+      <a class="hl" href={i.href}>
+        <span class="hl-value">{i.value}</span>
+        <span class="hl-title">{i.title}</span>
+        <span class="hl-text">{i.text}</span>
+      </a>
+    ))
+  }
+</nav>
+
+<style>
+  .highlights {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px;
+    margin-top: 1.25rem;
+  }
+  .hl {
+    display: flex;
+    flex-direction: column;
+    gap: 0.15rem;
+    padding: 0.8rem 0.85rem 0.9rem;
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    background: var(--surface);
+    color: var(--text);
+    text-decoration: none;
+    transition: border-color 0.15s;
+  }
+  .hl:hover {
+    border-color: var(--accent);
+  }
+  .hl-value {
+    font-size: 1.5rem;
+    font-weight: 750;
+    line-height: 1.15;
+    color: var(--accent);
+    font-variant-numeric: tabular-nums;
+  }
+  .hl-title {
+    font-weight: 650;
+  }
+  .hl-title::after {
+    content: ' →';
+    color: var(--accent);
+  }
+  .hl-text {
+    font-size: 0.85rem;
+    line-height: 1.35;
+    color: var(--muted);
+  }
+</style>
