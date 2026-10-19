@@ -1,7 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import {
   NBSP,
-  alarmFit,
   bedtimeTiming,
   bedtimesFor,
   calculate,
@@ -195,15 +194,5 @@ describe('isDefaultSettings', () => {
   it('сравнивает с настройками по умолчанию', () => {
     expect(isDefaultSettings({ fallAsleep: 15, cycle: 90 })).toBe(true);
     expect(isDefaultSettings({ fallAsleep: 30, cycle: 90 })).toBe(false);
-  });
-});
-
-describe('alarmFit', () => {
-  it('отбой 23:00, будильник 07:00 — 15 минут после пятого цикла', () => {
-    expect(alarmFit(t('23:00'), t('07:00'))).toEqual({ sleepMinutes: 465, fullCycles: 5, intoCycle: 15 });
-  });
-  it('граница цикла и переход через полночь', () => {
-    expect(alarmFit(t('23:00'), t('06:45'))).toEqual({ sleepMinutes: 450, fullCycles: 5, intoCycle: 0 });
-    expect(alarmFit(t('01:00'), t('07:00'))).toEqual({ sleepMinutes: 345, fullCycles: 3, intoCycle: 75 });
   });
 });

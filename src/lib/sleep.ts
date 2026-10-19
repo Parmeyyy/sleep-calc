@@ -199,18 +199,3 @@ export function napOptions(startMinutes: number, settings: Settings = DEFAULT_SE
 export function isDefaultSettings(settings: Settings): boolean {
   return settings.fallAsleep === DEFAULT_SETTINGS.fallAsleep && settings.cycle === DEFAULT_SETTINGS.cycle;
 }
-
-export interface AlarmFit {
-  /** Чистый сон от засыпания до будильника, минуты. */
-  sleepMinutes: number;
-  fullCycles: number;
-  /** Сколько минут идёт текущий цикл в момент будильника (0 — ровно граница). */
-  intoCycle: number;
-}
-
-/** Куда попадает будильник wake, если лечь в bed. */
-export function alarmFit(bedMinutes: number, wakeMinutes: number, settings: Settings = DEFAULT_SETTINGS): AlarmFit {
-  const { fallAsleep, cycle } = sanitizeSettings(settings);
-  const sleepMinutes = normalizeMinutes(wakeMinutes - bedMinutes - fallAsleep);
-  return { sleepMinutes, fullCycles: Math.floor(sleepMinutes / cycle), intoCycle: sleepMinutes % cycle };
-}

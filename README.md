@@ -37,7 +37,7 @@ npm run icons     # перегенерировать иконки и og.png из
 | `src/scripts/calculator.ts` | клиентский скрипт калькулятора, localStorage |
 | `src/components/` | калькулятор, шапка, подвал, «Как это работает», FAQ, блок рекламы |
 | `src/data/faq.ts` | вопросы FAQ (они же идут в JSON-LD FAQPage) |
-| `src/data/time-pages.ts` | тексты 18 посадочных страниц (время подставляется из расчёта) |
+| `src/data/time-pages.ts` | советы для 18 страниц со временем (время подставляется из расчёта) |
 | `src/data/sources.ts` | источники с DOI, на которые ссылаются тексты |
 | `src/pages/` | главная, `[slug].astro` (посадочные), статьи, 404, sitemap.xml, robots.txt, manifest |
 | `integrations/postbuild.mjs` | после сборки: типограф для HTML и `dist/sw.js` со списком файлов для офлайна |
