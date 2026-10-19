@@ -11,7 +11,9 @@ const notes = ['самый короткий', 'короткий', 'полный 
     <label for="nap-time">Ложусь в</label>
     <button type="button" class="now" data-nap-now>Ложусь сейчас</button>
   </div>
-  <input id="nap-time" class="time" type="time" value={start} step="60" required />
+  <div class="time-wrap">
+    <input id="nap-time" class="time" type="time" value={start} step="60" required />
+  </div>
 
 
   <h2 id="nap-title" aria-live="polite">Если ляжете в {start}, ставьте будильник на:</h2>
@@ -144,6 +146,7 @@ const notes = ['самый короткий', 'короткий', 'полный 
 <script>
   import { formatDuration, formatTime, napOptions, parseTime, sanitizeSettings } from '../lib/sleep';
   import { loadSettings, saveSettings } from '../scripts/calculator';
+  import { attachTimePicker } from '../scripts/time-picker';
 
   const root = document.querySelector<HTMLElement>('[data-nap]');
   if (root) {
@@ -180,6 +183,10 @@ const notes = ['самый короткий', 'короткий', 'полный 
       render();
     });
     time.addEventListener('blur', render);
+    attachTimePicker(time, (m) => {
+      start = m;
+      render();
+    });
     root.querySelector('[data-nap-now]')!.addEventListener('click', () => {
       start = nowMinutes();
       render();

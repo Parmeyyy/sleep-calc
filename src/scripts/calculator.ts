@@ -14,6 +14,7 @@ import {
   type Mode,
   type Settings,
 } from '../lib/sleep';
+import { attachTimePicker } from './time-picker';
 
 const STORAGE_KEY = 'sleep-calc:settings';
 
@@ -170,6 +171,10 @@ export function initCalculator(root: HTMLElement): void {
   });
   // Пустое поле (стёрли время) — возвращаем последнее корректное значение.
   timeInput.addEventListener('blur', render);
+  attachTimePicker(timeInput, (m) => {
+    times[mode] = m;
+    changed();
+  });
 
   // Кнопки ±: одно нажатие — один шаг, удержание — быстрая прокрутка.
   for (const btn of root.querySelectorAll<HTMLButtonElement>('[data-step]')) {
