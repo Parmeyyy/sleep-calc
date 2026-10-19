@@ -87,8 +87,8 @@ export function qualityOf(cycles: number): Quality {
 }
 
 export const QUALITY_LABEL: Record<Quality, string> = {
-  optimal: 'оптимально',
-  normal: 'нормально',
+  optimal: 'в норме',
+  normal: 'запасной',
   short: 'мало',
 };
 
