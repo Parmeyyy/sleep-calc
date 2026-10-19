@@ -50,13 +50,29 @@ const tabs: { mode: Mode; label: string }[] = [
 
   <div id="calc-panel" class="panel" role="tabpanel" aria-labelledby={`calc-tab-${mode}`}>
     <div class="time-head">
-      <label for="calc-time" id="calc-time-label">{mode === 'wake' ? 'Время подъёма' : 'Время отбоя'}</label>
+      <label for="calc-time" id="calc-time-label">{mode === 'wake' ? 'Подъём' : 'Отбой'}</label>
+      <label class="fine-toggle">
+        <input type="checkbox" id="calc-fine-toggle" aria-controls="calc-fine" aria-expanded="false" />
+        по минутам
+      </label>
       <button type="button" class="now" data-now>Ложусь сейчас</button>
     </div>
     <div class="time-ctl">
       <button type="button" class="step" data-step="-15" aria-label="На 15 минут раньше">−</button>
-      <input id="calc-time" class="time" type="time" value={mode === 'wake' ? wake : bed} step="300" required />
+      <input id="calc-time" class="time" type="time" value={mode === 'wake' ? wake : bed} step="60" required />
       <button type="button" class="step" data-step="15" aria-label="На 15 минут позже">+</button>
+    </div>
+    <div class="fine" id="calc-fine" hidden>
+      <div class="fine-group" role="group" aria-label="Часы">
+        <span class="fine-label">Часы</span>
+        <button type="button" class="fine-btn" data-step="-60" aria-label="На час раньше">−1</button>
+        <button type="button" class="fine-btn" data-step="60" aria-label="На час позже">+1</button>
+      </div>
+      <div class="fine-group" role="group" aria-label="Минуты">
+        <span class="fine-label">Минуты</span>
+        <button type="button" class="fine-btn" data-step="-1" aria-label="На минуту раньше">−1</button>
+        <button type="button" class="fine-btn" data-step="1" aria-label="На минуту позже">+1</button>
+      </div>
     </div>
 
     <div class="range inline">
@@ -74,7 +90,7 @@ const tabs: { mode: Mode; label: string }[] = [
         options.map((o) => (
           <li class="card" data-quality={o.quality}>
             <span class="card-time">{o.time}</span>{' '}
-            <span class="card-cycles">{cyclesLabel(o.cycles)},</span>{' '}
+            <span class="card-cycles">{cyclesLabel(o.cycles)}</span><span class="visually-hidden">,</span>{' '}
             <span class="card-dur">{formatDuration(o.sleepMinutes)}</span>{' '}
             <span class="card-badge">{QUALITY_LABEL[o.quality]}</span>
           </li>
@@ -136,6 +152,62 @@ const tabs: { mode: Mode; label: string }[] = [
     color: var(--muted);
     font-size: 0.95rem;
   }
+  .time-head .fine-toggle {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    min-height: 36px;
+    margin-right: auto;
+    font-size: 0.85rem;
+    cursor: pointer;
+    user-select: none;
+  }
+  .fine-toggle input {
+    width: 18px;
+    height: 18px;
+    margin: 0;
+    accent-color: var(--accent);
+  }
+
+  .fine {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+    margin-top: 8px;
+  }
+  .fine[hidden] {
+    display: none;
+  }
+  .fine-group {
+    display: grid;
+    grid-template-columns: 1fr 44px 44px;
+    align-items: center;
+    gap: 4px;
+    padding: 4px 4px 4px 10px;
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    background: var(--surface);
+  }
+  .fine-label {
+    font-size: 0.85rem;
+    color: var(--muted);
+  }
+  .fine-btn {
+    height: 40px;
+    border: 0;
+    border-radius: 10px;
+    background: var(--surface-2);
+    color: var(--text);
+    font: inherit;
+    font-weight: 600;
+    font-variant-numeric: tabular-nums;
+    cursor: pointer;
+    touch-action: manipulation;
+    user-select: none;
+  }
+  .fine-btn:active {
+    background: var(--border);
+  }
   .now {
     min-height: 36px;
     padding: 0 0.85rem;
@@ -160,6 +232,8 @@ const tabs: { mode: Mode; label: string }[] = [
     margin-top: 0.4rem;
   }
   .step {
+    touch-action: manipulation;
+    user-select: none;
     border: 1px solid var(--border);
     border-radius: var(--radius);
     background: var(--surface);

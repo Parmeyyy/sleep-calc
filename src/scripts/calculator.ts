@@ -13,6 +13,7 @@ import {
 } from '../lib/sleep';
 
 const STORAGE_KEY = 'sleep-calc:settings';
+const FINE_KEY = 'sleep-calc:fine';
 
 function loadSettings(): Settings | null {
   try {
@@ -76,7 +77,7 @@ export function initCalculator(root: HTMLElement): void {
       if (active) panel.setAttribute('aria-labelledby', tab.id);
     }
     root.dataset.mode = mode;
-    timeLabel.textContent = mode === 'wake' ? 'Время подъёма' : 'Время отбоя';
+    timeLabel.textContent = mode === 'wake' ? 'Подъём' : 'Отбой';
 
     const value = formatTime(times[mode]);
     if (timeInput.value !== value) timeInput.value = value;
@@ -86,7 +87,7 @@ export function initCalculator(root: HTMLElement): void {
       const c = cards[i];
       c.card.dataset.quality = o.quality;
       c.time.textContent = o.time;
-      c.cycles.textContent = `${cyclesLabel(o.cycles)},`;
+      c.cycles.textContent = cyclesLabel(o.cycles);
       c.dur.textContent = formatDuration(o.sleepMinutes);
       c.badge.textContent = QUALITY_LABEL[o.quality];
     });
@@ -117,12 +118,51 @@ export function initCalculator(root: HTMLElement): void {
   // Пустое поле (стёрли время) — возвращаем последнее корректное значение.
   timeInput.addEventListener('blur', render);
 
+  // Кнопки ±: одно нажатие — один шаг, удержание — быстрая прокрутка.
   for (const btn of root.querySelectorAll<HTMLButtonElement>('[data-step]')) {
-    btn.addEventListener('click', () => {
+    const step = () => {
       times[mode] = normalizeMinutes(times[mode] + Number(btn.dataset.step));
       render();
+    };
+    let delay: number | undefined;
+    let repeat: number | undefined;
+    const stop = () => {
+      clearTimeout(delay);
+      clearInterval(repeat);
+    };
+    btn.addEventListener('pointerdown', (e) => {
+      if (e.button !== 0) return;
+      step();
+      delay = window.setTimeout(() => {
+        repeat = window.setInterval(step, 70);
+      }, 400);
+    });
+    for (const type of ['pointerup', 'pointerleave', 'pointercancel', 'blur'] as const) {
+      btn.addEventListener(type, stop);
+    }
+    btn.addEventListener('contextmenu', (e) => e.preventDefault());
+    // Клавиатура (Enter/Space) даёт click без pointerdown.
+    btn.addEventListener('click', (e) => {
+      if (e.detail === 0) step();
     });
   }
+
+  const fineToggle = $<HTMLInputElement>('#calc-fine-toggle');
+  const finePanel = $<HTMLElement>('#calc-fine');
+  const applyFine = () => {
+    finePanel.hidden = !fineToggle.checked;
+    fineToggle.setAttribute('aria-expanded', String(fineToggle.checked));
+  };
+  try {
+    fineToggle.checked = localStorage.getItem(FINE_KEY) === '1';
+  } catch {}
+  applyFine();
+  fineToggle.addEventListener('change', () => {
+    applyFine();
+    try {
+      localStorage.setItem(FINE_KEY, fineToggle.checked ? '1' : '0');
+    } catch {}
+  });
 
   $<HTMLButtonElement>('[data-now]').addEventListener('click', () => {
     const now = new Date();
